@@ -1,11 +1,11 @@
 class Vehicle
 
-  attr_reader :vehicle_number, :name, :slots
+  attr_reader :vehicle_number, :vehicle_name, :slots
   attr_writer :slots
 
-  def initialize(vehicle_number, name)
+  def initialize(vehicle_number, vehicle_name)
     @vehicle_number = vehicle_number
-    @name = name
+    @vehicle_name = vehicle_name
 
     @slots = []
   end
