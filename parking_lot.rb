@@ -16,14 +16,33 @@ class ParkingLot
     print "Enter the columns in the parking lot. "
     @columns = gets.chomp.to_i
 
-    @parking_lot = Array.new(rows) {Array.new(columns)}
+    @parking_lot = []
+    position_start  = 1
+
+    @rows.times do
+      row = []
+
+      @columns.times do
+        row.push ParkingSlot.new(position_start, @columns)
+        position_start += 1
+      end
+
+      @parking_lot.push(row)
+    end
+
     @vehicles = {}
 
     puts "Your parking lot is ready. Now, you can park bikes, cars or trucks. Currently available slots: #{available_slots}"
-    puts "-----------------------------------------------------------------------------------------------------"
+    puts "-" * 100
   end
 
   def add_vehicle(type, vehicle_number, vehicle_name, slots)
+
+    if !valid_slots?(slots)
+      return "Sorry, you've entered invalid slots."
+    end
+
+    slots = slots.map { |slot| @parking_lot[slot[0] - 1][slot[1] - 1] }
 
     if !slots_available?(slots)
       return "Sorry, vehicle no: #{vehicle_number} cannot be placed in these parking slots. Try adding on some other slots."
@@ -33,22 +52,25 @@ class ParkingLot
 
     case type
     when "bike"
-      return "Invalid number of parking slots." if Bike::PARKING_SLOTS_NEEDED != slots.length
+      return "Bike requires 1 parking slot." if Bike::PARKING_SLOTS_NEEDED != slots.length
       vehicles[vehicle_number] = Bike.new(vehicle_number, vehicle_name)
 
     when "car"
-      return "Invalid number of parking slots." if Car::PARKING_SLOTS_NEEDED != slots.length
-      vehicles[vehicle_number] = Car.new(vehicle_number, vehicle_name)
+      return "Car requires 2 parking slots." if Car::PARKING_SLOTS_NEEDED != slots.length
+      car = Car.new(vehicle_number, vehicle_name)
+
+      return "Slots should be adjacent." if !car.can_occupy_slots? slots
+      vehicles[vehicle_number] = car
 
     when "truck"
-      return "Invalid number of parking slots." if Truck::PARKING_SLOTS_NEEDED != slots.length
+      return "Truck requires 4 parking slots." if Truck::PARKING_SLOTS_NEEDED != slots.length
       vehicles[vehicle_number] = Truck.new(vehicle_number, vehicle_name)
     end
 
     vehicles[vehicle_number].slots = slots
 
     vehicles[vehicle_number].slots.each do |slot|
-      parking_lot[slot[0] - 1][slot[1] - 1] = vehicle_name
+      slot.vehicle = vehicles[vehicle_number]
     end
 
     return "#{vehicle_name} with vehicle no: #{vehicle_number} added."
@@ -59,7 +81,7 @@ class ParkingLot
     return "Vehicle does not exist." if !vehicles.member?(vehicle_number)
 
     vehicles.fetch(vehicle_number).slots.each do |slot|
-      parking_lot[slot[0] - 1][slot[1] - 1] = nil
+      slot.vehicle = nil
     end
 
     vehicles.delete vehicle_number
@@ -67,16 +89,23 @@ class ParkingLot
     return "Vehicle with vehicle number: #{vehicle_number} removed from the parking lot."
   end
 
-  def slots_available?(slots)
+  def valid_slots?(slots)
 
-    slots.all? do |slot|
+    slots.each do |slot|
 
-      if slot[0] - 1 < 0 || slot[0] - 1 >= @rows || slot[1] - 1 < 0 || slot[1] - 1 >= @columns
+      begin
+        @parking_lot[slot[0] - 1][slot[1] - 1]
+      rescue
         return false
-      else
-        return parking_lot[slot[0] - 1][slot[1] - 1].nil?
       end
     end
+
+    true
+  end
+
+  def slots_available?(slots)
+
+    slots.all? { |slot| !slot.vehicle }
   end
 
   def available_slots
@@ -84,7 +113,7 @@ class ParkingLot
     slots = 0
 
     for row in parking_lot
-      slots += row.count {|slot| slot.nil?}
+      slots += row.count {|slot| !slot.vehicle}
     end
 
     slots
@@ -110,16 +139,16 @@ class ParkingLot
 
   def view
 
-    puts "--------------------------------------------------------------------------------------------------------------"
+    puts "-" * 100
     puts "\t\t\t\t\tParking Lot"
-    puts "--------------------------------------------------------------------------------------------------------------"
+    puts "-" * 100
 
     parking_lot.each do |row|
-      row.each { |column| print "#{column || "nil"} \t" }
+      row.each { |column| print "S: #{column.location} #{column.coordinates.to_s}, #{column.vehicle ? column.vehicle.vehicle_name : "nil"} \t" }
       print "\n"
     end
 
-    puts "---------------------------------------------Parked Vehicles--------------------------------------------------"
+    puts "#{'-' * 43}Parked Vehicles#{'-' * 42}"
 
     parked_vehicles.each do |key, value|
       print "#{key.upcase}: #{value} \t\t"
@@ -180,6 +209,22 @@ class ParkingLot
 
 end
 
+class ParkingSlot
+
+  attr_accessor :vehicle, :location, :parking_lot_columns
+
+  def initialize(location, parking_lot_columns)
+    @vehicle = nil
+    @location = location
+    @parking_lot_columns = parking_lot_columns
+  end
+
+  def coordinates
+    [(location - 1) / parking_lot_columns, (location - 1) % parking_lot_columns]
+  end
+
+end
+
 parking_lot = ParkingLot.new
 
 # puts parkingLot.add_vehicle("truck", "HR 12A 3456", "Volvo", [[1,2], [1,3], [2,2], [2,3]])
@@ -188,4 +233,4 @@ parking_lot = ParkingLot.new
 # puts parkingLot.remove_vehicle "CH 01A 2345"
 
 parking_lot.run
-# parkingLot.view
+# parking_lot.view
