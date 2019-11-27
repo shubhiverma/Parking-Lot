@@ -90,14 +90,39 @@ class ParkingLot
     slots
   end
 
+  def parked_vehicles
+
+    parked = {bikes: 0, cars: 0, trucks: 0}
+
+    vehicles.each do |key, value|
+
+      if value.class == Car
+        parked[:cars] += 1
+      elsif value.class == Bike
+        parked[:bikes] += 1
+      elsif value.class == Truck
+        parked[:trucks] += 1
+      end
+    end
+
+    parked
+  end
+
   def view
 
-    puts "--------------------------"
-    puts "\tParking Lot"
-    puts "--------------------------"
+    puts "--------------------------------------------------------------------------------------------------------------"
+    puts "\t\t\t\t\tParking Lot"
+    puts "--------------------------------------------------------------------------------------------------------------"
 
-    for row in parking_lot
-      p row
+    parking_lot.each do |row|
+      row.each { |column| print "#{column || "nil"} \t" }
+      print "\n"
+    end
+
+    puts "---------------------------------------------Parked Vehicles--------------------------------------------------"
+
+    parked_vehicles.each do |key, value|
+      print "#{key.upcase}: #{value} \t\t"
     end
 
     puts "Currently Available slots: #{available_slots}"
