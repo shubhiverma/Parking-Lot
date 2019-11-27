@@ -25,7 +25,11 @@ class ParkingLot
 
   def add_vehicle(type, vehicle_number, vehicle_name, slots)
 
-    return "Sorry, vehicle no: #{vehicle_number} cannot be placed in these parking slots. Try adding with other slots." if !(slots.all? {|slot| slot_available?(slot[0] - 1, slot[1] - 1)})
+    if !slots_available?(slots)
+      return "Sorry, vehicle no: #{vehicle_number} cannot be placed in these parking slots. Try adding on some other slots."
+    end
+
+    return "Vehicle number: #{vehicle_number} already parked in the parking lot." if vehicles.member? vehicle_number
 
     case type
     when "bike"
@@ -52,10 +56,9 @@ class ParkingLot
 
   def remove_vehicle(vehicle_number)
 
-    p vehicles.fetch(vehicle_number).slots
+    return "Vehicle does not exist." if !vehicles.member?(vehicle_number)
 
     vehicles.fetch(vehicle_number).slots.each do |slot|
-      p slot
       parking_lot[slot[0] - 1][slot[1] - 1] = nil
     end
 
@@ -64,12 +67,16 @@ class ParkingLot
     return "Vehicle with vehicle number: #{vehicle_number} removed from the parking lot."
   end
 
-  def slot_available?(row, column)
+  def slots_available?(slots)
 
-    return false if row < 0 || row >= @rows;
-    return false if column < 0 || column >= @columns;
+    slots.all? do |slot|
 
-    parking_lot[row][column].nil?
+      if slot[0] - 1 < 0 || slot[0] - 1 >= @rows || slot[1] - 1 < 0 || slot[1] - 1 >= @columns
+        return false
+      else
+        return parking_lot[slot[0] - 1][slot[1] - 1].nil?
+      end
+    end
   end
 
   def available_slots
@@ -92,6 +99,8 @@ class ParkingLot
     for row in parking_lot
       p row
     end
+
+    puts "Currently Available slots: #{available_slots}"
   end
 
   def run
@@ -118,12 +127,21 @@ class ParkingLot
         print "Slots? "
         slots = gets.chomp
 
-        puts add_vehicle vehicle_type, vehicle_number, vehicle_name, JSON.parse(slots)
-      elsif input == 'r'
-        puts "Enter the vehicle number you wish to remove. "
-        vehicle_number = gets.chomp
+        begin
+          slots = JSON.parse(slots)
+        rescue
+          slots = []
+        end
 
-        puts remove_vehicle vehicle_number
+        puts add_vehicle vehicle_type, vehicle_number, vehicle_name, slots
+      elsif input == 'r'
+        if vehicles.size.zero?
+          puts "There are no vehicles in the parking lot. Try adding some first."
+        else
+          puts "Enter the vehicle number you wish to remove. "
+          vehicle_number = gets.chomp
+          puts remove_vehicle vehicle_number
+        end
       else
         puts "Invalid input."
       end
@@ -137,12 +155,12 @@ class ParkingLot
 
 end
 
-parkingLot = ParkingLot.new
+parking_lot = ParkingLot.new
 
 # puts parkingLot.add_vehicle("truck", "HR 12A 3456", "Volvo", [[1,2], [1,3], [2,2], [2,3]])
 # puts parkingLot.add_vehicle("bike", "CH 01A 2345", "Honda", [[3,3]])
 
 # puts parkingLot.remove_vehicle "CH 01A 2345"
 
-parkingLot.run
+parking_lot.run
 # parkingLot.view
