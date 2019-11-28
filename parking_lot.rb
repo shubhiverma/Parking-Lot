@@ -1,5 +1,4 @@
 require './vehicle'
-require 'json'
 
 class ParkingLot
 
@@ -33,7 +32,7 @@ class ParkingLot
     @vehicles = {}
 
     puts "Your parking lot is ready. Now, you can park bikes, cars or trucks. Currently available slots: #{available_slots}"
-    puts "-" * 100
+    view
   end
 
   def add_vehicle(type, vehicle_number, vehicle_name, slots)
@@ -44,7 +43,7 @@ class ParkingLot
       return "Sorry, vehicle no: #{vehicle_number} cannot be placed in these parking slots. Try adding on some other slots."
     end
 
-    slots = slots.map { |slot| @parking_lot[slot[0] - 1][slot[1] - 1] }
+    slots = slots.map { |slot| @parking_lot[slot[0]][slot[1]] }
 
     case type
     when "bike"
@@ -91,7 +90,7 @@ class ParkingLot
   def slots_available?(slots)
 
     begin
-      slots = slots.map { |slot| @parking_lot[slot[0] - 1][slot[1] - 1] }
+      slots = slots.map { |slot| @parking_lot[slot[0]][slot[1]] }
       slots.all? { |slot| !slot.vehicle }
     rescue
       return false
@@ -168,16 +167,11 @@ class ParkingLot
         print "Vehicle Name? "
         vehicle_name = gets.chomp
 
-        print "Slots? "
-        slots = gets.chomp
+        print "Enter the slot number? "
+        locations = gets.chomp
 
-        begin
-          slots = JSON.parse(slots)
-        rescue
-          slots = []
-        end
-
-        puts add_vehicle vehicle_type, vehicle_number, vehicle_name, slots
+        locations = locations.split.map{|location| coordinates location.to_i}
+        puts add_vehicle vehicle_type, vehicle_number, vehicle_name, locations
       elsif input == 'r'
         if vehicles.size.zero?
           puts "There are no vehicles in the parking lot. Try adding some first."
@@ -195,6 +189,10 @@ class ParkingLot
       print "Wish to continue? y / n "
       user_input = gets.chomp.downcase
     end
+  end
+
+  def coordinates location
+    [(location - 1) / columns, (location - 1) % columns]
   end
 
 end
@@ -217,11 +215,6 @@ class ParkingSlot
         location - 1
     ]
   end
-
-  def coordinates
-    [(location - 1) / parking_lot_columns, (location - 1) % parking_lot_columns]
-  end
-
 end
 
 parking_lot = ParkingLot.new
