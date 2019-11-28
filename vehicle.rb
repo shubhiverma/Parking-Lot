@@ -22,16 +22,7 @@ class Car < Vehicle
 
   def can_occupy_slots?(slots)
 
-    first_location = slots[0].location
-
-    if ([
-        first_location + 1, first_location - 1,
-        first_location + slots[0].parking_lot_columns, first_location - slots[0].parking_lot_columns
-        ].include? slots[1].location)
-      return true
-    end
-
-    return false
+    slots[0].adjacent_locations.include? slots[1].location
   end
 end
 
@@ -40,5 +31,9 @@ class Truck < Vehicle
   PARKING_SLOTS_NEEDED = 4
 
   def can_occupy_slots?(slots)
+
+    locations = slots.map{ |slot| slot.location }
+
+    slots.all? { |slot| (slot.adjacent_locations & locations).length == 2 }
   end
 end

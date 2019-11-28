@@ -38,17 +38,13 @@ class ParkingLot
 
   def add_vehicle(type, vehicle_number, vehicle_name, slots)
 
-    if !valid_slots?(slots)
-      return "Sorry, you've entered invalid slots."
-    end
-
-    slots = slots.map { |slot| @parking_lot[slot[0] - 1][slot[1] - 1] }
+    return "Vehicle number: #{vehicle_number} already parked in the parking lot." if vehicles.member? vehicle_number
 
     if !slots_available?(slots)
       return "Sorry, vehicle no: #{vehicle_number} cannot be placed in these parking slots. Try adding on some other slots."
     end
 
-    return "Vehicle number: #{vehicle_number} already parked in the parking lot." if vehicles.member? vehicle_number
+    slots = slots.map { |slot| @parking_lot[slot[0] - 1][slot[1] - 1] }
 
     case type
     when "bike"
@@ -64,7 +60,10 @@ class ParkingLot
 
     when "truck"
       return "Truck requires 4 parking slots." if Truck::PARKING_SLOTS_NEEDED != slots.length
-      vehicles[vehicle_number] = Truck.new(vehicle_number, vehicle_name)
+      truck = Truck.new(vehicle_number, vehicle_name)
+
+      return "Slots should be adjacent." if !truck.can_occupy_slots? slots
+      vehicles[vehicle_number] = truck
     end
 
     vehicles[vehicle_number].slots = slots
@@ -89,23 +88,14 @@ class ParkingLot
     return "Vehicle with vehicle number: #{vehicle_number} removed from the parking lot."
   end
 
-  def valid_slots?(slots)
-
-    slots.each do |slot|
-
-      begin
-        @parking_lot[slot[0] - 1][slot[1] - 1]
-      rescue
-        return false
-      end
-    end
-
-    true
-  end
-
   def slots_available?(slots)
 
-    slots.all? { |slot| !slot.vehicle }
+    begin
+      slots = slots.map { |slot| @parking_lot[slot[0] - 1][slot[1] - 1] }
+      slots.all? { |slot| !slot.vehicle }
+    rescue
+      return false
+    end
   end
 
   def available_slots
@@ -144,7 +134,7 @@ class ParkingLot
     puts "-" * 100
 
     parking_lot.each do |row|
-      row.each { |column| print "S: #{column.location} #{column.coordinates.to_s}, #{column.vehicle ? column.vehicle.vehicle_name : "nil"} \t" }
+      row.each { |column| print "S: #{column.location}, #{column.vehicle ? column.vehicle.vehicle_name : "nil"} \t" }
       print "\n"
     end
 
@@ -217,6 +207,15 @@ class ParkingSlot
     @vehicle = nil
     @location = location
     @parking_lot_columns = parking_lot_columns
+  end
+
+  def adjacent_locations
+    [
+        location - parking_lot_columns,
+        location + 1,
+        location + parking_lot_columns,
+        location - 1
+    ]
   end
 
   def coordinates
